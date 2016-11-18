@@ -1,0 +1,22 @@
+##############
+# Python 
+###############
+
+
+*.pyc
+**/__pycache__/*
+
+#############
+# OS
+############
+**/.DS_Store
+**/.metadata/*
+**/.recommenders/*
+**/.DS_Store.orig
+**/.idea/*
+
+###########################
+# Training and Test Data
+############################
+train/*
+validate/*
