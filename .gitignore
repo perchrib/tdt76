@@ -20,3 +20,6 @@
 ############################
 train/*
 validate/*
+img_embeddings/*
+lost_images.pickle
+lost_labels.pickle
