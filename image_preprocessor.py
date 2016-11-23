@@ -8,13 +8,15 @@ import pickle
 import sys
 import time
 from error_finder import get_lost_images, get_lost_labels
-dataset = "train/"
+
+###SHIFT ONLY THIS WHEN CHANGING DATASET#############
+dataset = "validate/"
 
 pickle_dir = "pickle/"
 image_dir = "pics/"
 txt_dir = "txt/"
 root_dir = dataset + image_dir
-save_dir = "img_embeddings/"
+save_dir = dataset + "img_embeddings/"
 
 
 def run_image_preprocessor(root_dir, save_dir, model):
@@ -26,9 +28,9 @@ def run_image_preprocessor(root_dir, save_dir, model):
             print("\nFile already exists:", save_dir + dir + ".pickle")
         else:
             img_path = root_dir + dir + "/"
-            save_path = save_dir + dir + ".pickle"
+            filename = dir + ".pickle"
             embeddings = get_embeddings(img_path, model, dir_counter)
-            save_embeddings(save_path, embeddings)
+            save_embeddings(save_dir, filename, embeddings)
             dir_counter += 1
 
 
@@ -68,8 +70,10 @@ def get_embeddings(path, model, dir_counter):
     return embed_images
 
 
-def save_embeddings(filename, dict):
-    with open(filename, "wb") as img_embeddings:
+def save_embeddings(dir, filename, dict):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
+    with open(dir + filename, "wb") as img_embeddings:
         pickle.dump(dict, img_embeddings)
 
 

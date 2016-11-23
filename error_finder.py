@@ -62,7 +62,7 @@ def find_lost_labels(path, dataset="train/"):
 
 
 def get_lost_labels(path, dataset="train/"):
-    filename = "lost_labels.pickle"
+    filename = dataset + "lost_labels.pickle"
     if os.path.exists(filename):
         return get_pickle_file(filename)
     else:
@@ -72,7 +72,7 @@ def get_lost_labels(path, dataset="train/"):
 
 
 def get_lost_images(path, dataset="train/"):
-    filename = "lost_images.pickle"
+    filename = dataset + "lost_images.pickle"
     if os.path.exists(filename):
         return get_pickle_file(filename)
     else:

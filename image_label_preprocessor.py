@@ -4,14 +4,15 @@ from error_finder import get_lost_images, get_lost_labels
 import os
 import sys
 
-dataset = "train/"
+dataset = "validate/"
+
 glove_dir = "glove/"
 glove_file = "glove.6B.300d.txt"
 pickle_dir = "pickle/"
 image_dir = "pics/"
 txt_dir = "txt/"
 
-save_dir = "label_embeddings/"
+save_dir = dataset + "label_embeddings/"
 
 root_dir = dataset + pickle_dir
 
@@ -81,6 +82,8 @@ def load_img_description(filename, dir):
     return data
 
 def save_img_label_embeddings(filename, dir, data):
+    if not os.path.exists(dir):
+        os.makedirs(dir)
     with open(dir + filename, "wb") as f:
         pickle.dump(data, f)
 
