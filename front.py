@@ -3,6 +3,7 @@ import random
 import glob
 import pickle
 from your_code import train, test
+import time
 
 
 def score(label_dict, target='', selection=list(), n=50):
@@ -137,21 +138,38 @@ def generate_dict_from_text_file(filename):
 if __name__ == "__main__":
 
     # First calls here to make sure we have generated a list of all IDS and their labels stored in a pickle
+
     train_labels = generate_dict_from_directory()
 
     # Now, do training -- OPTIONAL
     #
-    train()
+    #train()
 
     # Generate random queries, just to run the "test"-function. These are elements from the TEST-SET folder
-    test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
+    #test_labels = generate_dict_from_directory(pickle_file='./test/pickle/combined.pickle', directory='./test/txt/')
+
+    ##########mineCODE###############
+    test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/combined.pickle', directory='./validate/txt/')
+    ##########mineCODE###############
+
     test_ids = list(test_labels.keys())
     all_labels = {**test_labels, **train_labels}
     no_test_images = len(test_ids)
     queries = []
+
+    #TODO reset to 1000
     for i in range(1000):
         queries.append(test_ids[random.randint(0, no_test_images - 1)])
-    results = test(queries=queries)
+
+    #TODO
+    #Fix this later: remove location path
+    start = time.time()
+    results = test(queries=queries, location='./validate')
+    end = time.time()
+    seconds = end - start
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    print("\n%d h ,%02d min %02d sec" % (h, m, s))
 
     # Run the score function
     total_score = 0.0

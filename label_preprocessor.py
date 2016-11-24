@@ -4,7 +4,7 @@ from error_finder import get_lost_images, get_lost_labels
 import os
 import sys
 
-dataset = "validate/"
+dataset = "train/"
 
 glove_dir = "glove/"
 glove_file = "glove.6B.300d.txt"
@@ -61,15 +61,16 @@ def get_word_embedded_img_label(img_description, glove_word_vectors):
 
 
 def get_word_avg_vector(labels, glove_word_vectors):
-    all_label_word_vectors = np.zeros(300, dtype='float32')
+    avg_word_vector = np.zeros(300, dtype='float32')
     for word, value in labels:
-        #Finding if a label has two word
+        #Finding if a label has two words
         words = word.split()
         for w in words:
             if w in glove_word_vectors:
                 label_word_vector = glove_word_vectors[w]
-                all_label_word_vectors += label_word_vector * value
-    return all_label_word_vectors
+                avg_word_vector += label_word_vector * value
+
+    return avg_word_vector
 
 #takes the 1000 description "0000xxxxx.pickle" files
 def get_all_descriptions_labels(dir):
