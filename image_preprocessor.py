@@ -16,7 +16,7 @@ pickle_dir = "pickle/"
 image_dir = "pics/"
 txt_dir = "txt/"
 root_dir = dataset + image_dir
-save_dir = dataset + "img_embeddings/"
+save_dir = "feature_extracton/" + dataset + "img_embeddings/"
 
 
 def run_image_preprocessor(root_dir, save_dir, model):
@@ -93,6 +93,8 @@ def get_sub_dir(path):
     return directories
 
 if __name__ == "__main__":
+    if not os.path.exists("feature_extracton/"):
+        os.makedirs("feature_extracton/")
     lost_images = get_lost_images(image_dir, dataset)
     lost_image_labels = get_lost_labels(txt_dir, dataset)
     print("Import model....")

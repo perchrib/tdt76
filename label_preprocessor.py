@@ -4,6 +4,7 @@ from error_finder import get_lost_images, get_lost_labels
 import os
 import sys
 
+#Change only dataset to get and store things, when running validate the last pickle file must be deleted manually
 dataset = "train/"
 
 glove_dir = "glove/"
@@ -12,7 +13,7 @@ pickle_dir = "pickle/"
 image_dir = "pics/"
 txt_dir = "txt/"
 
-save_dir = dataset + "label_embeddings/"
+save_dir = "feature_extraction/" + dataset + "label_embeddings/"
 
 root_dir = dataset + pickle_dir
 
@@ -59,8 +60,9 @@ def get_word_embedded_img_label(img_description, glove_word_vectors):
             word_embedded_img_labels[img_ID] = word_vectors
     return word_embedded_img_labels
 
-
+missed_words = dict()
 def get_word_avg_vector(labels, glove_word_vectors):
+
     avg_word_vector = np.zeros(300, dtype='float32')
     for word, value in labels:
         #Finding if a label has two words
@@ -69,6 +71,9 @@ def get_word_avg_vector(labels, glove_word_vectors):
             if w in glove_word_vectors:
                 label_word_vector = glove_word_vectors[w]
                 avg_word_vector += label_word_vector * value
+            else:
+                if w not in missed_words:
+                    missed_words[w] = 1
 
     return avg_word_vector
 
@@ -94,9 +99,24 @@ def print_status(counter, limit):
     sys.stdout.write(out)
     sys.stdout.flush()
 
+def combine_files():
+    combined = dict()
+    files = list(filter(lambda x: "0000" in x, os.listdir("feature_extraction/train/label_embeddings/")))
+    path = "feature_extraction/train/label_embeddings/"
+    for file in files:
+        data = load_img_description(file, path)
+        for img_id in data:
+            combined[img_id] = data[img_id]
+
+    save_img_label_embeddings("combined.pick", path, combined)
+
 
 if __name__ == "__main__":
+    if not os.path.exists("feature_extraction/"):
+        os.makedirs("feature_extraction/")
     lost_images = get_lost_images(image_dir, dataset)
     lost_image_labels = get_lost_labels(txt_dir, dataset)
     glove_word_embeddings = get_word_embeddings_from_glove_file(glove_dir, glove_file)
     run_img_labels_preprocessor(root_dir, save_dir, glove_word_embeddings)
+    combine_files()
+    print("\n Words missed: ", len(missed_words))

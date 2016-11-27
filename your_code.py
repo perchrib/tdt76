@@ -5,7 +5,9 @@ import os
 import sys
 import numpy as np
 #cosimilarity
+import time
 from sklearn.metrics.pairwise import cosine_similarity
+import matplotlib.pyplot as plt
 
 #keras
 from keras.callbacks import EarlyStopping
@@ -21,6 +23,11 @@ from keras.applications.inception_v3 import InceptionV3
 from keras.models import Model
 from image_preprocessor import get_image_feature
 
+#Directory for extracted features
+root_dir = "./feature_extraction/"
+
+
+
 #cluster functions
 from cluster_imgs import predict_cluster
 
@@ -28,8 +35,8 @@ import operator
 
 def get_dataset(dataset):
     print("Preprocessing ", dataset, "set....")
-    img_dir = dataset + "/img_embeddings/"
-    label_dir = dataset + '/label_embeddings/'
+    img_dir = root_dir + dataset + "/img_embeddings/"
+    label_dir = root_dir + dataset + '/label_embeddings/'
     img_embedding_files = get_files_in_dir(img_dir)
     label_embedding_files = get_files_in_dir(label_dir)
     if len(img_embedding_files) != len(label_embedding_files):
@@ -55,38 +62,43 @@ def get_dataset(dataset):
                 else:
                     X_train.append(img_vec)
                     Y_train.append(word_vec)
+
+    #X_train = normalize_vectors(X_train)
+    #Y_train = normalize_vectors(Y_train)
     X_train = np.asarray(X_train, dtype='float32')
     Y_train = np.asarray(Y_train, dtype='float32')
     return X_train, Y_train
 
-
-# def find_most_similar_pics(img_vector, cluster_name):
-#     pics = load_file("db_cluster/" + cluster_name)
-#     treshold = 0.5#0.5
-#     #img_retrieved = dict()
-#     img_retrieved = []
-#     for img_id in pics:
-#         vector = pics[img_id]
-#         similarity = cosine_similarity([img_vector], [vector])
-#         if similarity >= treshold:
-#             img_retrieved.append(img_id)
-#     return img_retrieved
-
+#Cluster
 def find_most_similar_pics(img_vector, cluster_name):
     pics = load_file("db_cluster/" + cluster_name)
     treshold = 0.5
     img_ids = list(pics.keys())
     img_vectors = list(pics.values())
+    #return img_ids
     results = cosine_similarity([img_vector], [img_vectors][0])[0]
     #print("RESULTS: ", results)
     indices = np.where(results >= treshold)[0]
     #print("inices: ", indices)
-
     img_retrieved = []
     for i in indices:
         img_retrieved.append(img_ids[i])
     #print("img retrievd: ", img_retrieved)
     return img_retrieved
+
+def find_most_similar_pics_1(img_vector, img_ids, img_vectors):
+    treshold = 0.7
+    results = cosine_similarity([img_vector], [img_vectors][0])[0]
+    indices = np.where(results >= treshold)[0]
+    #while len(indices) == 0:
+    #    treshold -= 0.05
+    #    results = cosine_similarity([img_vector], [img_vectors][0])[0]
+    #    indices = np.where(results >= treshold)[0]
+    img_retrieved = []
+    for i in indices:
+        img_retrieved.append(img_ids[i])
+    return img_retrieved
+
 
 def normalize_vectors(vectors):
     min = 0.0
@@ -99,13 +111,11 @@ def normalize_vectors(vectors):
             max = v.max()
     print("MAX: ", max, " MIN: ", min)
     total = abs(max) + abs(min)
+    print(total)
     for v in vectors:
         n_vectors.append((v + min) / total)
     n_vectors = np.asarray(n_vectors, dtype='float32')
     return n_vectors
-
-
-
 
 
 def load_file(path):
@@ -115,16 +125,9 @@ def load_file(path):
 
 
 def get_files_in_dir(dir):
-    files = os.listdir(dir)
+    files = list(filter(lambda x: ".pickle" in x, os.listdir(dir)))
     return files
 
-class LossHistory(cb.Callback):
-    def on_train_begin(self, logs={}):
-        self.losses = []
-
-    def on_batch_end(self, batch, logs={}):
-        batch_loss = logs.get('loss')
-        self.losses.append(batch_loss)
 
 def train(location='./train/'):
     """
@@ -136,17 +139,27 @@ def train(location='./train/'):
     """
     x_train, y_train = get_dataset('train')
     x_val, y_val = get_dataset('validate')
-    return
     early_stopping = EarlyStopping(monitor='val_loss', patience=2)
     model = init_model()
-    history = LossHistory()
-    model.fit(x_train, y_train, nb_epoch=100, batch_size=128,
+    history = model.fit(x_train, y_train, nb_epoch=100, batch_size=128,
               callbacks=[early_stopping],
-              validation_data=(x_val, y_val))
-    model.save('models/sec_model.h5')
+              validation_data=(x_val, y_val), verbose=1)
 
 
 
+    model.save('models/mse_three_hidden_layers_with_uniform.h5')
+    plot_result(history)
+
+
+def plot_result(history):
+    # summarize history for loss
+    plt.plot(history.history['loss'])
+    plt.plot(history.history['val_loss'])
+    plt.title('model loss')
+    plt.ylabel('loss')
+    plt.xlabel('epoch')
+    plt.legend(['train', 'test'], loc='upper left')
+    plt.show()
 
 def test(queries=list(), location='./test'):
     """
@@ -173,6 +186,10 @@ def test(queries=list(), location='./test'):
     training_labels = pickle.load(open('./train/pickle/combined.pickle', 'rb'))
     training_labels = list(training_labels.keys())
 
+    all_extracted_training_labels = load_file("./feature_extraction/train/label_embeddings/combined.pick")
+    img_ids = list(all_extracted_training_labels.keys())
+    img_vectors = list(all_extracted_training_labels.values())
+
     limit = len(queries)
     print('num of input pics: ', limit)
     counter = 0
@@ -186,10 +203,10 @@ def test(queries=list(), location='./test'):
         img_inception_feature = get_image_feature(img_path, inception_model)
         img_feature = my_model.predict(np.asarray([img_inception_feature]))[0]
 
-        cluster_file = predict_cluster(img_feature)
+        #cluster_file = predict_cluster(img_feature)
+        #similar_pics = find_most_similar_pics(img_feature, cluster_file)
 
-
-        similar_pics = find_most_similar_pics(img_feature, cluster_file)
+        similar_pics = find_most_similar_pics_1(img_feature, img_ids, img_vectors)
 
         #print("input img: ", query, " output img: ", similar_pics)
         my_return_dict[query] = similar_pics
@@ -219,17 +236,12 @@ def bruteforce_to_find_subfolder(jpg_file, location):
             return sub + "/"
 
 
-
-
-
-
-
 def preprocess_image_in_inception(img_path, inception_model):
     feature = get_image_feature(img_path, inception_model)
     return feature
 
 def load_my_model():
-    model = load_model('models/sec_model.h5')
+    model = load_model('models/mse_three_hidden_layers.h5')
     return model
 
 
@@ -251,21 +263,66 @@ def load_my_model():
 #     print('Model compiled')
 #     return model
 
-def init_model():
-    print('Compiling Model ... ')
-    model = Sequential()
-    model.add(Dense(1024, input_dim=2048))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.4))
-    model.add(Dense(512))
-    model.add(Activation('relu'))
-    model.add(Dropout(0.4))
-    model.add(Dense(300))
-    model.add(Activation('softmax'))
+#secong model
+# def init_model():
+#     print('Compiling Model ... ')
+#     model = Sequential()
+#     model.add(Dense(1024, input_dim=2048))
+#     model.add(Activation('relu'))
+#     model.add(Dropout(0.4))
+#     model.add(Dense(512))
+#     model.add(Activation('relu'))
+#     model.add(Dropout(0.4))
+#     model.add(Dense(300))
+#     model.add(Activation('softmax'))
+#
+#     rms = RMSprop()
+#     model.compile(loss='categorical_crossentropy', optimizer=rms, metrics=['accuracy'])
+#     print('Model compiled')
+#     return model
 
-    rms = RMSprop()
-    model.compile(loss='categorical_crossentropy', optimizer=rms, metrics=['accuracy'])
+#TODO This is the real network ive been using
+# def init_model():
+#     print('Init Model ... ')
+#     model = Sequential()
+#     model.add(Dense(1024, input_dim=2048))
+#     model.add(Activation('tanh'))
+#     model.add(Dropout(0.4))
+#     model.add(Dense(512))
+#     model.add(Activation('tanh'))
+#     model.add(Dropout(0.4))
+#     model.add(Dense(300))
+#     model.add(Activation('tanh'))
+#
+#     rms = RMSprop(lr=0.0005)
+#     model.compile(loss='mean_squared_error', optimizer=rms, metrics=['accuracy'])
+#     print('Model compiled')
+#     return model
+
+def init_model():
+    print('Init Model ... ')
+    model = Sequential()
+    model.add(Dense(1024, input_dim=2048, init='uniform'))
+    model.add(Activation('tanh'))
+    model.add(Dropout(0.4))
+    model.add(Dense(750, init='uniform'))
+    model.add(Activation('tanh'))
+    model.add(Dropout(0.4))
+    model.add(Dense(512, init='uniform'))
+    model.add(Activation('tanh'))
+    model.add(Dropout(0.4))
+    model.add(Dense(300, init='uniform'))
+    model.add(Activation('tanh'))
+
+    rms = RMSprop(lr=0.0001)
+    model.compile(loss='mean_squared_error', optimizer=rms, metrics=['accuracy'])
     print('Model compiled')
     return model
 if __name__ == "__main__":
+    start = time.time()
     train()
+    end = time.time()
+    seconds = end - start
+    m, s = divmod(seconds, 60)
+    h, m = divmod(m, 60)
+    print("Time spend training ==> %d h ,%02d min %02d sec" % (h, m, s))

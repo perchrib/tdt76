@@ -4,6 +4,7 @@ import pickle
 import os
 import time
 
+root = 'feature_extraction/'
 def predict_cluster(img_vector):
     kmeans = load_file('kmeans.pickle')
     cluster = kmeans.predict([img_vector])
@@ -11,7 +12,7 @@ def predict_cluster(img_vector):
 
 
 def find_clusters(dataset='train'):
-    img_dir = dataset + "/label_embeddings/"
+    img_dir = root + dataset + "/label_embeddings/"
     img_embedding_files = get_files_in_dir(img_dir)
     img_vectors, img_IDs = get_img_vectors_img_ids(img_embedding_files, img_dir)
 

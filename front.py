@@ -151,14 +151,16 @@ if __name__ == "__main__":
     ##########mineCODE###############
     test_labels = generate_dict_from_directory(pickle_file='./validate/pickle/combined.pickle', directory='./validate/txt/')
     ##########mineCODE###############
-
+    # TODO set back queries to test_ids
     test_ids = list(test_labels.keys())
+    #queries = list(test_labels.keys())
     all_labels = {**test_labels, **train_labels}
+
     no_test_images = len(test_ids)
     queries = []
 
     #TODO reset to 1000
-    for i in range(1000):
+    for i in range(100):
         queries.append(test_ids[random.randint(0, no_test_images - 1)])
 
     #TODO
@@ -169,7 +171,7 @@ if __name__ == "__main__":
     seconds = end - start
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
-    print("\n%d h ,%02d min %02d sec" % (h, m, s))
+
 
     # Run the score function
     total_score = 0.0
@@ -183,5 +185,8 @@ if __name__ == "__main__":
         total_score += image_score
         print('%s scores %8.6f' % (image, image_score))
 
+    #TODO set back test_ids to queries
     print(50 * '=' + '\n' + 'Average score over %d images: %10.8f' % (len(queries), total_score / len(queries))
           + '\n' + 50 * '=')
+
+    print("\n%d h ,%02d min %02d sec" % (h, m, s))
