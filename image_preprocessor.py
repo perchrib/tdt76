@@ -16,7 +16,7 @@ pickle_dir = "pickle/"
 image_dir = "pics/"
 txt_dir = "txt/"
 root_dir = dataset + image_dir
-save_dir = "feature_extracton/" + dataset + "img_embeddings/"
+save_dir = "feature_extraction/" + dataset + "img_embeddings/"
 
 
 def run_image_preprocessor(root_dir, save_dir, model):

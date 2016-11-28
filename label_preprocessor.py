@@ -13,7 +13,7 @@ pickle_dir = "pickle/"
 image_dir = "pics/"
 txt_dir = "txt/"
 
-save_dir = "feature_extraction/" + dataset + "label_embeddings/"
+save_dir = "feature_extraction_1/" + dataset + "label_embeddings/"
 
 root_dir = dataset + pickle_dir
 
@@ -62,7 +62,6 @@ def get_word_embedded_img_label(img_description, glove_word_vectors):
 
 missed_words = dict()
 def get_word_avg_vector(labels, glove_word_vectors):
-
     avg_word_vector = np.zeros(300, dtype='float32')
     for word, value in labels:
         #Finding if a label has two words
@@ -113,7 +112,7 @@ def combine_files():
 
 if __name__ == "__main__":
     if not os.path.exists("feature_extraction/"):
-        os.makedirs("feature_extraction/")
+        os.makedirs("feature_extraction_1/")
     lost_images = get_lost_images(image_dir, dataset)
     lost_image_labels = get_lost_labels(txt_dir, dataset)
     glove_word_embeddings = get_word_embeddings_from_glove_file(glove_dir, glove_file)

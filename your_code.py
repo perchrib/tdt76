@@ -63,14 +63,12 @@ def get_dataset(dataset):
                     X_train.append(img_vec)
                     Y_train.append(word_vec)
 
-    #X_train = normalize_vectors(X_train)
-    #Y_train = normalize_vectors(Y_train)
     X_train = np.asarray(X_train, dtype='float32')
     Y_train = np.asarray(Y_train, dtype='float32')
     return X_train, Y_train
 
 #Cluster
-def find_most_similar_pics(img_vector, cluster_name):
+def find_most_similar_pics_in_cluster(img_vector, cluster_name):
     pics = load_file("db_cluster/" + cluster_name)
     treshold = 0.5
     img_ids = list(pics.keys())
@@ -86,7 +84,7 @@ def find_most_similar_pics(img_vector, cluster_name):
     #print("img retrievd: ", img_retrieved)
     return img_retrieved
 
-def find_most_similar_pics_1(img_vector, img_ids, img_vectors):
+def find_most_similar_pics(img_vector, img_ids, img_vectors):
     treshold = 0.7
     results = cosine_similarity([img_vector], [img_vectors][0])[0]
     indices = np.where(results >= treshold)[0]
@@ -98,24 +96,6 @@ def find_most_similar_pics_1(img_vector, img_ids, img_vectors):
     for i in indices:
         img_retrieved.append(img_ids[i])
     return img_retrieved
-
-
-def normalize_vectors(vectors):
-    min = 0.0
-    max = 0.0
-    n_vectors = []
-    for v in vectors:
-        if v.min() < min:
-            min = v.min()
-        if v.max() > max:
-            max = v.max()
-    print("MAX: ", max, " MIN: ", min)
-    total = abs(max) + abs(min)
-    print(total)
-    for v in vectors:
-        n_vectors.append((v + min) / total)
-    n_vectors = np.asarray(n_vectors, dtype='float32')
-    return n_vectors
 
 
 def load_file(path):
@@ -139,6 +119,7 @@ def train(location='./train/'):
     """
     x_train, y_train = get_dataset('train')
     x_val, y_val = get_dataset('validate')
+
     early_stopping = EarlyStopping(monitor='val_loss', patience=2)
     model = init_model()
     history = model.fit(x_train, y_train, nb_epoch=100, batch_size=128,
@@ -188,7 +169,7 @@ def test(queries=list(), location='./test'):
 
     all_extracted_training_labels = load_file("./feature_extraction/train/label_embeddings/combined.pick")
     img_ids = list(all_extracted_training_labels.keys())
-    img_vectors = list(all_extracted_training_labels.values())
+    img_labels = list(all_extracted_training_labels.values())
 
     limit = len(queries)
     print('num of input pics: ', limit)
@@ -206,7 +187,7 @@ def test(queries=list(), location='./test'):
         #cluster_file = predict_cluster(img_feature)
         #similar_pics = find_most_similar_pics(img_feature, cluster_file)
 
-        similar_pics = find_most_similar_pics_1(img_feature, img_ids, img_vectors)
+        similar_pics = find_most_similar_pics(img_feature, img_ids, img_labels)
 
         #print("input img: ", query, " output img: ", similar_pics)
         my_return_dict[query] = similar_pics
@@ -228,7 +209,6 @@ def print_status(counter, limit):
 
 def bruteforce_to_find_subfolder(jpg_file, location):
     subfolders = list(filter(lambda x: "0000" in x, os.listdir(location)))
-    #print(subfolders)
     for sub in subfolders:
         path = location + sub + "/"
         pics = list(filter(lambda x: ".jpg" in x, os.listdir(path)))
@@ -241,63 +221,9 @@ def preprocess_image_in_inception(img_path, inception_model):
     return feature
 
 def load_my_model():
-    model = load_model('models/mse_three_hidden_layers.h5')
+    model = load_model('models/mse_three_hidden_layers_with_uniform.h5')
     return model
 
-
-#first model
-# def init_model():
-#     print('Compiling Model ... ')
-#     model = Sequential()
-#     model.add(Dense(4096, input_dim=2048))
-#     model.add(Activation('relu'))
-#     model.add(Dropout(0.4))
-#     model.add(Dense(1024))
-#     model.add(Activation('relu'))
-#     model.add(Dropout(0.4))
-#     model.add(Dense(300))
-#     model.add(Activation('softmax'))
-#
-#     rms = RMSprop()
-#     model.compile(loss='categorical_crossentropy', optimizer=rms, metrics=['accuracy'])
-#     print('Model compiled')
-#     return model
-
-#secong model
-# def init_model():
-#     print('Compiling Model ... ')
-#     model = Sequential()
-#     model.add(Dense(1024, input_dim=2048))
-#     model.add(Activation('relu'))
-#     model.add(Dropout(0.4))
-#     model.add(Dense(512))
-#     model.add(Activation('relu'))
-#     model.add(Dropout(0.4))
-#     model.add(Dense(300))
-#     model.add(Activation('softmax'))
-#
-#     rms = RMSprop()
-#     model.compile(loss='categorical_crossentropy', optimizer=rms, metrics=['accuracy'])
-#     print('Model compiled')
-#     return model
-
-#TODO This is the real network ive been using
-# def init_model():
-#     print('Init Model ... ')
-#     model = Sequential()
-#     model.add(Dense(1024, input_dim=2048))
-#     model.add(Activation('tanh'))
-#     model.add(Dropout(0.4))
-#     model.add(Dense(512))
-#     model.add(Activation('tanh'))
-#     model.add(Dropout(0.4))
-#     model.add(Dense(300))
-#     model.add(Activation('tanh'))
-#
-#     rms = RMSprop(lr=0.0005)
-#     model.compile(loss='mean_squared_error', optimizer=rms, metrics=['accuracy'])
-#     print('Model compiled')
-#     return model
 
 def init_model():
     print('Init Model ... ')
@@ -318,6 +244,7 @@ def init_model():
     model.compile(loss='mean_squared_error', optimizer=rms, metrics=['accuracy'])
     print('Model compiled')
     return model
+
 if __name__ == "__main__":
     start = time.time()
     train()
@@ -326,3 +253,13 @@ if __name__ == "__main__":
     m, s = divmod(seconds, 60)
     h, m = divmod(m, 60)
     print("Time spend training ==> %d h ,%02d min %02d sec" % (h, m, s))
+
+    """Sample run for retrieved images"""
+    input_label = load_file('./validate/pickle/combined.pickle')
+    training_labels = load_file("./train/pickle/combined.pickle")
+    res = test(['61a820bad2154a4d'], "validate")
+    imgs = list(res.values())
+    print("\n")
+    print(' Input: ', '169aee7b9ebde79d', "Labels: ", input_label['61a820bad2154a4d'])
+    for i in imgs[0]:
+        print('Output: ', i, "Labels: ", training_labels[i])
